@@ -1,0 +1,10 @@
+# Python bytecode and compiled files
+__pycache__/
+*.py[cod]
+
+# Virtual environment directory
+# (Common names are venv, env, .venv, .env)
+venv/
+env/
+.venv/
+.env/
