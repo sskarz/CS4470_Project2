@@ -1,6 +1,6 @@
 import time
 
-class RoutingEntry:
+class Router:
     """Data structure for routing table entry"""
     def __init__(self, destination_id, next_hop_id, cost):
         self.destination_id = destination_id

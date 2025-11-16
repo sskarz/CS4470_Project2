@@ -165,8 +165,6 @@ class CommandHandler:
         self._display_routing_table()
         return True, ""
     
-
-    
     
     def handle_disable(self, args: list) -> Tuple[bool, str]:
         """
@@ -204,6 +202,7 @@ class CommandHandler:
         except ValueError:
             return False, "Error: Invalid server ID"
     
+
     def handle_crash(self, args: list) -> Tuple[bool, str]:
         """
         Handle crash command: Simulate server crash by closing all connections
@@ -233,6 +232,7 @@ class CommandHandler:
         
         return True, ""
     
+
     def _invalidate_routes_through_neighbor(self, neighbor_id: int):
         """
         Helper method to invalidate all routes that go through a specific neighbor
@@ -246,6 +246,7 @@ class CommandHandler:
                 entry.next_hop_id = -1
                 entry.last_update_time = time.time()
     
+
     def _display_routing_table(self):
         """
         Helper method to display the routing table in sorted order
