@@ -10,6 +10,11 @@ from collections import defaultdict
 import argparse
 
 
+from commands import CommandHandler
+
+
+
+
 class DVServer:
 
     def __init__(self, topology_file, update_interval):
@@ -41,6 +46,10 @@ class DVServer:
         # Threading
         self.running = True
         self.lock = threading.Lock()
+
+
+        # Command handler
+        self.command_handler = CommandHandler(self)
         
         # Parse topology file
         self.parse_topology_file()
@@ -52,14 +61,34 @@ class DVServer:
         self.create_socket()
 
 
+
+    """Check if the given IP and port match this machine"""
+    def is_local_server(self, ip, port):
+        
+        #TODO
+        return 
     
+
+
+    """Initialize the routing table based on topology information"""
+    def initialize_routing_table(self):
+        #TODO
+        return 
+    
+
     #create socket 
     def create_socket(self):
 
         #TODO
         return 
     
+
     
+    """Create a distance vector update message"""
+    def create_update_message(self):
+        #TODO
+        return 
+        
 
     """Parse a received distance vector update message"""
     def parse_update_message(self, data, sender_addr):
@@ -88,34 +117,7 @@ class DVServer:
         return 
     
 
-    """Handle the update command to change link cost"""
-    def handle_update_command(self, server1, server2, cost):
-        #TODO
-        return 
-    
-
-
-    """Handle the disable command to disable link to a neighbor"""
-    def handle_disable_command(self, server_id):    
-        #TODO
-        return 
-    
-    
-    """Handle the crash command to close all connections"""
-    def handle_crash_command(self):
-
-        #TODO
-        return  
-    
-
-
-    """Display the current routing table in sorted order"""
-    def display_routing_table(self):
-
-        #TODO
-        return  
-    
-
+  
 
     """Thread for sending periodic routing updates"""
     def periodic_update_thread(self):
