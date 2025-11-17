@@ -250,12 +250,15 @@ class DVServer:
             return
 
         message = self.create_update_message()
+        print(message)
 
         # send to each neighbor
         for neighbor_id, neighbor_info in self.neighbors.items():
             try:
                 neighbor_addr = (neighbor_info['ip'], neighbor_info['port'])
+                print(f"NEIGHBOR ADDR: {neighbor_addr}")
                 self.socket.sendto(message, neighbor_addr)
+                print(f"SOCKET SENT!")
             except Exception as e:
                 print(f"Error sending update to neighbor {neighbor_id}: {e}") 
     
@@ -477,7 +480,15 @@ class DVServer:
             else:
                 cost_str = str(int(entry.cost))
 
-            print(f"{dest_id} {next_hop} {cost_str}")  
+            print(f"{dest_id} {next_hop} {cost_str}")
+
+        # Print detailed routing table view
+        print("\n=== Detailed Routing Table ===")
+        for dest_id, entry in sorted_entries:
+            next_hop_str = str(entry.next_hop_id) if entry.next_hop_id is not None else "None"
+            cost_str = "inf" if entry.cost == float('inf') else str(entry.cost)
+            print(f"  Dest: {dest_id:3d} | Next Hop: {next_hop_str:4s} | Cost: {cost_str:>6s}")
+        print("=" * 30)  
     
 
 
