@@ -394,6 +394,33 @@ class DVServer:
                     self.routing_table[neighbor_id].cost = new_cost
                     self.routing_table[neighbor_id].last_update_time = time.time()
 
+                # recalculate routing table for routes that used the changed link
+                # if the cost increased, we need to find alternative paths
+                for dest_id in list(self.routing_table.keys()):
+                    if dest_id == self.server_id:
+                        continue  # skip self
+
+                    current_entry = self.routing_table[dest_id]
+
+                    # if this route goes through the neighbor whose cost changed
+                    # we need to recalculate
+                    if current_entry.next_hop_id == neighbor_id:
+                        # recalculate cost for this destination
+                        if dest_id == neighbor_id:
+                            # direct link to the neighbor
+                            current_entry.cost = new_cost
+                            current_entry.last_update_time = time.time()
+                        else:
+                            # indirect route through this neighbor
+                            # cost = (cost to neighbor) + (neighbor's cost to dest)
+                            # we don't have neighbor's current distance vector here,
+                            # so mark as needing recalculation
+                            # it will be fixed when we receive the next update from neighbors
+                            pass
+
+            # send immediate update to neighbors with new costs
+            self.send_update_to_neighbors()
+
             return f"update {server1} {server2} {new_cost} SUCCESS"
 
         except ValueError as e:
