@@ -28,30 +28,37 @@ def get_local_config():
 
 
 def get_remote_config():
-    """Configuration for remote testing (different machines)"""
+    """Configuration for remote testing (4 servers, 2 on same machine)"""
     print("\n=== Remote Testing Configuration ===")
-    print("Enter IP addresses for each teammate's computer")
+    print("Setting up 4 servers (2 on same machine, 2 on different machines)")
     print("(Find your IP with 'ifconfig' on Mac/Linux or 'ipconfig' on Windows)\n")
 
-    server1_ip = input("Server 1 IP address: ").strip()
-    server2_ip = input("Server 2 IP address: ").strip()
-    server3_ip = input("Server 3 IP address: ").strip()
+    # Get server configurations
+    print("Enter IP address and port for each server:")
+    print("Note: Servers 1 and 2 can share the same IP (different ports)\n")
 
-    # Use same port for all (since different machines)
-    port = int(input("Port number (e.g., 4091): ").strip())
+    servers = {}
+    for i in range(1, 5):
+        print(f"Server {i}:")
+        ip = input(f"  IP address: ").strip()
+        port = int(input(f"  Port: ").strip())
+        servers[i] = (ip, port)
+        print()
 
-    servers = {
-        1: (server1_ip, port),
-        2: (server2_ip, port),
-        3: (server3_ip, port),
-    }
-
-    # Same topology as local
+    # Ring topology: 1-2-3-4-1
+    print("Using ring topology with default costs:")
     topology = {
-        1: {2: 5, 3: 8},
-        2: {1: 5, 3: 3},
-        3: {1: 8, 2: 3},
+        1: {2: 5, 4: 10},   # Server 1 connects to 2 and 4
+        2: {1: 5, 3: 3},    # Server 2 connects to 1 and 3
+        3: {2: 3, 4: 7},    # Server 3 connects to 2 and 4
+        4: {3: 7, 1: 10},   # Server 4 connects to 3 and 1
     }
+
+    print("  1 <--(5)--> 2")
+    print("  ^           ^")
+    print(" (10)        (3)")
+    print("  |           |")
+    print("  4 <--(7)--> 3")
 
     return servers, topology
 
