@@ -250,7 +250,6 @@ class DVServer:
             return
 
         message = self.create_update_message()
-        print(message)
 
         # send to each neighbor
         for neighbor_id, neighbor_info in self.neighbors.items():
@@ -291,6 +290,11 @@ class DVServer:
             for dest_id, sender_cost in entries.items():
                 # skip if destination is self
                 if dest_id == self.server_id:
+                    continue
+
+                # skip if destination is a disabled neighbor (cost = infinity)
+                # we don't want to accept routes TO a disabled neighbor from other neighbors
+                if dest_id in self.neighbors and self.neighbors[dest_id]['cost'] == float('inf'):
                     continue
 
                 # calculate new cost via this neighbor
@@ -390,36 +394,40 @@ class DVServer:
 
             # update the link cost
             with self.lock:
+                # Capture old cost to calculate delta for indirect routes
+                old_cost = self.neighbors[neighbor_id]['cost']
                 self.neighbors[neighbor_id]['cost'] = new_cost
 
-                # update routing table entry for this neighbor
-                if neighbor_id in self.routing_table:
-                    self.routing_table[neighbor_id].cost = new_cost
-                    self.routing_table[neighbor_id].last_update_time = time.time()
-
                 # recalculate routing table for routes that used the changed link
-                # if the cost increased, we need to find alternative paths
-                for dest_id in list(self.routing_table.keys()):
-                    if dest_id == self.server_id:
-                        continue  # skip self
-
-                    current_entry = self.routing_table[dest_id]
-
-                    # if this route goes through the neighbor whose cost changed
-                    # we need to recalculate
-                    if current_entry.next_hop_id == neighbor_id:
-                        # recalculate cost for this destination
+                for dest_id, entry in self.routing_table.items():
+                    
+                    # Case 1: Route uses this neighbor as next hop
+                    if entry.next_hop_id == neighbor_id:
+                        # If destination IS the neighbor, cost is the direct link cost
                         if dest_id == neighbor_id:
-                            # direct link to the neighbor
-                            current_entry.cost = new_cost
-                            current_entry.last_update_time = time.time()
+                            entry.cost = new_cost
+                            entry.last_update_time = time.time()
+                        # Indirect route via this neighbor
                         else:
-                            # indirect route through this neighbor
-                            # cost = (cost to neighbor) + (neighbor's cost to dest)
-                            # we don't have neighbor's current distance vector here,
-                            # so mark as needing recalculation
-                            # it will be fixed when we receive the next update from neighbors
-                            pass
+                            # If old link was infinite, we can't calculate new total from it (unknown path cost)
+                            if old_cost == float('inf'):
+                                pass
+                            # If new link is infinite, path becomes infinite
+                            elif new_cost == float('inf'):
+                                entry.cost = float('inf')
+                                entry.last_update_time = time.time()
+                            # Standard cost update: adjust total cost by the change in link cost
+                            elif entry.cost != float('inf'):
+                                entry.cost = entry.cost - old_cost + new_cost
+                                entry.last_update_time = time.time()
+
+                    # Case 2: Destination IS the neighbor, but currently using different next hop
+                    elif dest_id == neighbor_id:
+                        # Check if the new direct link is better than current indirect path
+                        if new_cost < entry.cost:
+                            entry.next_hop_id = neighbor_id
+                            entry.cost = new_cost
+                            entry.last_update_time = time.time()
 
             # send immediate update to neighbors with new costs
             self.send_update_to_neighbors()
@@ -427,7 +435,7 @@ class DVServer:
             return f"update {server1} {server2} {new_cost} SUCCESS"
 
         except ValueError as e:
-            return f"update {server1} {server2} {new_cost} Error: Invalid parameters - {e}" 
+            return f"update {server1} {server2} {new_cost}"
     
 
 
@@ -461,6 +469,9 @@ class DVServer:
                     if entry.next_hop_id == server_id:
                         entry.cost = float('inf')
                         entry.last_update_time = time.time()
+
+            # send immediate update to neighbors with new costs
+            self.send_update_to_neighbors()
 
             return f"disable {server_id} SUCCESS"
 
@@ -563,6 +574,10 @@ class DVServer:
                 sender_id, entries = self.parse_update_message(data, sender_addr)
 
                 if sender_id is not None:
+                    # check if neighbor is disabled - ignore if cost is infinity
+                    if sender_id in self.neighbors and self.neighbors[sender_id]['cost'] == float('inf'):
+                        continue
+
                     print(f"RECEIVED A MESSAGE FROM SERVER {sender_id}")
 
                     # update neighbor's last update time
